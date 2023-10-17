@@ -5,16 +5,70 @@ from .serializers import CategorySerializer, ImageModelSerializer, BrandSerializ
 from rest_framework import status
 from rest_framework.response import Response
 from users.models import OfferItem
+from rest_framework.permissions import IsAdminUser, AllowAny
+from .paginations import LargeResultsSetPagination, StandardResultsSetPagination
 
+
+# Category Create View
+class CategoryCreateView(CreateAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    
+    # def create(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     self.perform_create(serializer)
+        
+    #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
 # Category View
 class CategoryListView(ListAPIView):
-    queryset = Category.objects.all()
+    queryset = Category.objects.filter(is_active=1)
     serializer_class = CategorySerializer
     
 # Category Detail View
 class CategoryDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [AllowAny]
+    
+    def get_queryset(self):
+        return Category.objects.filter(is_active=1)
+    
+    def perform_destroy(self, instance):
+        if instance.built_in:
+            return Response({"error": "Built-in categories cannot be deleted."}, status=status.HTTP_403_FORBIDDEN)
+        elif instance.product_set.exists():
+            return Response({"error": "Category has related records in products table and cannot be deleted."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            instance.delete()
+            
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.built_in:
+            return Response({"error": "Built-in categories cannot be updated."}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response(serializer.data)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.built_in:
+            return Response({"error": "Built-in categories cannot be deleted."}, status=status.HTTP_403_FORBIDDEN)
+        
+        self.perform_destroy(instance)
+        return Response({'id': instance.id, 'title': instance.title})
+    
+# Category Products View
+class CategoryProductsView(ListAPIView):
+    serializer_class = ProductSerializer
+    
+    def get_queryset(self):
+        category_id = self.kwargs['id']
+        return Product.objects.filter(category_id=category_id, is_active=1)
     
 # Image Model View    
 class ImageModelListView(ListAPIView):
@@ -126,6 +180,11 @@ class ProductCreateView(CreateAPIView):
     
 # Product View
 class ProductListView(ListAPIView):
+    queryset = Product.objects.filter(is_active=True)
+    serializer_class = ProductSerializer
+    page_size = 20
+    paginator = StandardResultsSetPagination()
+    # page = paginator.page(first=page_size)
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     

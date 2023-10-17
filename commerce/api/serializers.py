@@ -5,7 +5,7 @@ from commerce.models import Category, ImageModel, Brand, Product, ProductPropert
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'title']
+        fields = ['id', 'title', 'is_active']
         
         
 class ImageModelSerializer(serializers.ModelSerializer):
@@ -48,11 +48,11 @@ class ModelSerializer(serializers.ModelSerializer):
         
         
 class ProductSerializer(serializers.ModelSerializer):
-    image_id = ImageModelSerializer()
-    brand_id = BrandSerializer()
-    category_id = CategorySerializer(many=True)
-    productpropertykey_set = ProductPropertyKeySerializer(many=True)
-    model_set = ModelSerializer(many=True)
+    # image_id = ImageModelSerializer()
+    # brand_id = BrandSerializer()
+    # category_id = CategorySerializer()
+    # productpropertykey_set = ProductPropertyKeySerializer()
+    # model_set = ModelSerializer()
     
     class Meta:
         model = Product

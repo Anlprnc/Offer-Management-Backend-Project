@@ -17,7 +17,7 @@ class UserProfile(models.Model):
     address = models.TextField(max_length=500, verbose_name="Adres")
     city = models.CharField(max_length=100)
     country = models.CharField(max_length=100)
-    tax_no = models.CharField(blank=True, null=True)
+    tax_no = models.CharField(max_length=20, blank=True, null=True)
     status = models.IntegerField(choices=STATUS_CHOICES)
     built_in = models.BooleanField(default=0)
     create_at = models.DateTimeField(auto_now_add=True)
@@ -84,7 +84,7 @@ class ShoppingCartItem(models.Model):
     cart_id = models.ForeignKey(ShoppingCart, on_delete=models.CASCADE, related_name='items')
     product_id = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='items')
     model_id = models.ForeignKey(Model, on_delete=models.CASCADE, related_name="items")
-    amount = models.DecimalField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
     create_at = models.DateTimeField(auto_now_add=True)
     update_at =models.DateTimeField(auto_now=True, null=True, blank=True)
     
@@ -127,7 +127,7 @@ class Offer(models.Model):
 
 
 class OfferItem(models.Model):
-    sku = models.CharField(min_length=10, max_length=100)
+    sku = models.CharField(max_length=100)
     quantity = models.PositiveIntegerField()
     buying_price = models.DecimalField(max_digits=10, decimal_places=2)  
     profit_margin = models.DecimalField(max_digits=5, decimal_places=2)  
@@ -151,8 +151,8 @@ class OfferItem(models.Model):
 
 
 class Favorites(models.Model):
-    product_id = models.ForeignKey(Product)
-    user_id = models.ForeignKey(UserProfile)
+    product_id = models.ForeignKey(Product, on_delete=models.CASCADE)
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     create_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -164,9 +164,9 @@ class Favorites(models.Model):
 
 
 class Log(models.Model):
-    log = models.CharField()
-    user_id = models.ForeignKey(UserProfile)
-    offer_id = models.ForeignKey(Offer)
+    log = models.CharField(max_length=100)
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    offer_id = models.ForeignKey(Offer, on_delete=models.CASCADE)
     create_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:

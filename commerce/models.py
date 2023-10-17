@@ -10,7 +10,7 @@ class Category(models.Model):
     seq = models.IntegerField(default=0)
     slug = models.SlugField()
     is_active = models.BooleanField(default=True)
-    main_category_id = models.ForeignKey('self', on_delete=models.CASCADE)
+    # main_category_id = models.ForeignKey('self', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -23,8 +23,8 @@ class Category(models.Model):
     
 class ImageModel(models.Model):
     data = models.PositiveIntegerField(unique=True)
-    name = models.CharField()
-    type = models.CharField(blank=True, null=True)
+    name = models.CharField(max_length=100)
+    type = models.CharField(max_length=50, blank=True, null=True)
     
     class Meta:
         verbose_name = "Image"
@@ -39,8 +39,8 @@ class Brand(models.Model):
         (0, 'Not Published'),
         (1, 'Published')
     )
-    name = models.CharField(min_length=4, max_length=70)
-    profit_rate = models.DecimalField(default=0)
+    name = models.CharField(max_length=70)
+    profit_rate = models.DecimalField(default=0, decimal_places=2, max_digits=10)
     is_active = models.IntegerField(choices=PUBLISHED_CHOICES, default=0)
     image_id = models.ForeignKey(ImageModel, on_delete=models.CASCADE)
     builtIn = models.BooleanField(default=0)
@@ -56,9 +56,9 @@ class Brand(models.Model):
 
 
 class Product(models.Model):
-    title = models.CharField(min_length=5, max_length=150)
+    title = models.CharField(max_length=150)
     short_desc = models.CharField(max_length=300, blank=True, null=True)
-    long_desc = models.CharField(blank=True, null=True)
+    long_desc = models.CharField(max_length=250, blank=True, null=True)
     slug = models.SlugField()
     seq = models.IntegerField(default=0)
     is_new = models.BooleanField(default=False)
@@ -80,7 +80,7 @@ class Product(models.Model):
 
 
 class ProductPropertyKey(models.Model):
-    name = models.CharField(min_length=2, max_length=80)
+    name = models.CharField(max_length=80)
     seq = models.IntegerField()
     built_in = models.BooleanField(default=0)
     product_id = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -110,14 +110,14 @@ class Currency(models.Model):
     
 
 class Model(models.Model):
-    title = models.CharField(min_length=5, max_length=150)
-    sku = models.CharField()
+    title = models.CharField(max_length=150)
+    sku = models.CharField(max_length=100)
     stock_amount = models.IntegerField()
     in_box_quantity = models.IntegerField(default=1)
     seq = models.IntegerField(default=0)
     image_id = models.ForeignKey(ImageModel, on_delete=models.CASCADE)
-    buying_price = models.DecimalField()
-    tax_rate = models.DecimalField(default=0)
+    buying_price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_rate = models.DecimalField(default=0, max_digits=10, decimal_places=2)
     is_active = models.BooleanField(default=True)
     built_in = models.BooleanField(default=0)
     currency_id = models.ForeignKey(Currency, on_delete=models.CASCADE)

@@ -19,9 +19,12 @@ urlpatterns = [
     path('categories/create/', views.CategoryCreateView.as_view(), name='category-create'),
     path('categories/<int:pk>/', views.CategoryDetailView.as_view(), name='category-detail'),
     path('categories/<int:pk>/products/', views.CategoryProductsView.as_view(), name='category-products'),
-    
+    # ----- Images -----
     path('images/', views.ImageModelListView.as_view(), name='image-model-list'),
+    # ----- Brands -----
     path('brands/', views.BrandListView.as_view(), name='brand-list'),
+    path('brands/<int:pk>/', views.BrandDetailView.as_view(), name='brand-detail'),
+    
     path('propertykeys/', views.ProductPropertyKeyListView.as_view(), name='property-key-list'),
     path('currencies/', views.CurrencyListView.as_view(), name='currency-list'),
     path('propertyvalues/', views.ModelPropertyValueListView.as_view(), name='property-value-list'),

@@ -8,7 +8,7 @@ from users.models import OfferItem
 from rest_framework.permissions import IsAdminUser, AllowAny
 from .paginations import LargeResultsSetPagination, StandardResultsSetPagination
 
-
+# ---------- Category ----------
 # Category Create View
 class CategoryCreateView(CreateAPIView):
     queryset = Category.objects.all()
@@ -36,29 +36,18 @@ class CategoryDetailView(RetrieveUpdateDestroyAPIView):
         return Category.objects.filter(is_active=1)
     
     def perform_destroy(self, instance):
-        if instance.built_in:
-            return Response({"error": "Built-in categories cannot be deleted."}, status=status.HTTP_403_FORBIDDEN)
-        elif instance.product_set.exists():
-            return Response({"error": "Category has related records in products table and cannot be deleted."}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            instance.delete()
-            
+        instance.delete()
+        return Response({"success": "Category deleted successfully."}, status=status.HTTP_200_OK)
+
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.built_in:
-            return Response({"error": "Built-in categories cannot be updated."}, status=status.HTTP_403_FORBIDDEN)
-        
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        
-        return Response(serializer.data)
-    
+        serializer.save()
+        return Response({"success": "Category updated successfully."}, status=status.HTTP_200_OK)
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.built_in:
-            return Response({"error": "Built-in categories cannot be deleted."}, status=status.HTTP_403_FORBIDDEN)
-        
         self.perform_destroy(instance)
         return Response({'id': instance.id, 'title': instance.title})
     
@@ -69,7 +58,8 @@ class CategoryProductsView(ListAPIView):
     def get_queryset(self):
         category_id = self.kwargs['id']
         return Product.objects.filter(category_id=category_id, is_active=1)
-    
+
+# ---------- Image ----------  
 # Image Model View    
 class ImageModelListView(ListAPIView):
     queryset = ImageModel.objects.all()
@@ -79,32 +69,63 @@ class ImageModelListView(ListAPIView):
 class ImageModelDetailView(RetrieveUpdateDestroyAPIView):
     queryset = ImageModel.objects.all()
     serializer_class = ImageModelSerializer
-    
+
+# ---------- Brand ----------
 # Brand View
 class BrandListView(ListAPIView):
-    queryset = Brand.objects.all()
+    queryset = Brand.objects.filter(is_active=1)
     serializer_class = BrandSerializer
+    pagination_class = StandardResultsSetPagination
+    permission_classes = [AllowAny]
+    
+    def list(self, request, *args, **kwargs):
+        queryset =self.filter_queryset(self.get_queryset())
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 # Brand Detail View
 class BrandDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
+    permission_classes = [IsAdminUser]
     
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"success": "Brand updated successfully."}, status=status.HTTP_200_OK)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response({"success": "Brand deleted successfully."}, status=status.HTTP_200_OK)
+
+# ---------- Product Property ----------
 # Product Property Key View
 class ProductPropertyKeyListView(ListAPIView):
     queryset = ProductPropertyKey.objects.all()
     serializer_class = ProductPropertyKeySerializer
-    
+
+# ---------- Currency ----------
 # Currency View
 class CurrencyListView(ListAPIView):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
-    
+
+# ---------- Model Property Value ----------
 # Model Property Value View
 class ModelPropertyValueListView(ListAPIView):
     queryset = ModelPropertyValue.objects.all()
     serializer_class = ModelPropertyValueSerializer
-    
+
+# ---------- Model ----------
 # Model Create View
 class ModelCreateView(CreateAPIView):
     queryset = Model.objects.all()
@@ -162,6 +183,7 @@ class ModelDetailView(RetrieveUpdateDestroyAPIView):
         self.perform_destroy(instance)
         return Response({'id': instance.id, 'title': instance.title})
     
+# ---------- Porduct ----------
 #Product Create View
 class ProductCreateView(CreateAPIView):
     queryset = Product.objects.all()

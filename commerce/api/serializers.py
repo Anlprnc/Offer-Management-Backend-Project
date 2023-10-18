@@ -64,4 +64,17 @@ class FeaturedProductSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Product
-        fields = ['id', 'title', 'categories']        
+        fields = ['id', 'title', 'categories']      
+        
+        
+class ReportSerializer(serializers.Serializer)  :
+    categories = serializers.IntegerField()
+    brands = serializers.IntegerField()
+    products = serializers.IntegerField()
+    offers = serializers.IntegerField()
+    
+    
+class OfferReportSerializer(serializers.Serializer):
+    period = serializers.CharField()
+    totalProducts = serializers.IntegerField()
+    totalAmount = serializers.DecimalField(max_digits=10, decimal_places=2)

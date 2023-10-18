@@ -24,6 +24,9 @@ urlpatterns = [
     # ----- Brands -----
     path('brands/', views.BrandListView.as_view(), name='brand-list'),
     path('brands/<int:pk>/', views.BrandDetailView.as_view(), name='brand-detail'),
+    # ----- Report -----
+    path('report/', views.ReportView.as_view(), name='report'),
+    path('report/offers/', views.OfferReportView.as_view(), name='offer-report'),
     
     path('propertykeys/', views.ProductPropertyKeyListView.as_view(), name='property-key-list'),
     path('currencies/', views.CurrencyListView.as_view(), name='currency-list'),

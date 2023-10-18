@@ -1,12 +1,15 @@
 from datetime import timezone
-from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, RetrieveAPIView
 from commerce.models import Category, ImageModel, Brand, Product, ProductPropertyKey, Currency, Model, ModelPropertyValue
-from .serializers import CategorySerializer, ImageModelSerializer, BrandSerializer, ProductSerializer, ProductPropertyKeySerializer, CurrencySerializer, ModelSerializer, ModelPropertyValueSerializer
+from .serializers import CategorySerializer, ImageModelSerializer, BrandSerializer, ProductSerializer, ProductPropertyKeySerializer, CurrencySerializer, ModelSerializer, ModelPropertyValueSerializer, ReportSerializer, OfferReportSerializer
 from rest_framework import status
 from rest_framework.response import Response
 from users.models import OfferItem
 from rest_framework.permissions import IsAdminUser, AllowAny
 from .paginations import LargeResultsSetPagination, StandardResultsSetPagination
+from commerce.models import Offer
+from datetime import datetime, timedelta
+from django.db.models import Sum
 
 # ---------- Category ----------
 # Category Create View
@@ -298,3 +301,67 @@ class ProductPropertiesDetailView(RetrieveUpdateDestroyAPIView):
         
         self.perform_destroy(instance)
         return Response({'id': instance.id, 'name': instance.name})
+    
+# ---------- Report ----------
+# Report View
+class ReportView(RetrieveAPIView):
+    serializer_class = ReportSerializer
+    
+    def get_object(self):
+        today = timezone.now()
+        categories_count = Category.objects.filter(is_active=1).count()
+        brands_count = Brand.objects.filter(is_active=1).count()
+        products_count = Product.objects.filter(is_active=1).count()
+        offers_total = Offer.objects.filter(created_at__date=today).count()
+        
+        data = {
+            'categories': categories_count,
+            'brands': brands_count,
+            'products': products_count,
+            'offers': offers_total
+        }
+        
+        return data
+    
+# Offer Report View
+class OfferReportView(ListAPIView):
+    serializer_class = OfferReportSerializer
+    
+    def get_queryset(self):
+        date1 = self.request.query_params.get('date1')
+        date2 = self.request.query_params.get('date2')
+        report_type = self.request.query_params.get('type')
+        
+        if date1 and date2 and report_type:
+            date1 = datetime.strptime(date1, '%Y-%m-%d')
+            date2 = datetime.strptime(date2, '%Y-%m-%d')
+            
+            if report_type == 'day':
+                period = timedelta(days=1)
+            elif report_type =='week':
+                period = timedelta(weeks=1)
+            elif report_type == 'month':
+                period = timedelta(days=30)
+            elif report_type == 'year':
+                period = timedelta(days=365)
+            
+            queryset = []
+            current_date = date1
+            while current_date <= date2:
+                next_date = current_date + period
+                total_products = Offer.objects.filter(created_at__gte=current_date, created_at__lt=next_date).count()
+                total_amount = Offer.objects.filter(created_at__gte=current_date, created_at__lt=next_date).aggregate(total_amount=Sum('amount'))['amount__sum'] or 0
+                
+                report_entry = {
+                    'period': current_date.strftime('%b %Y'),
+                    'totalProducts': total_products,
+                    'totalAmount': total_amount
+                }
+                
+                queryset.append(report_entry)
+                
+                current_date = next_date
+                
+            return queryset
+        
+        return Response({'error': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)

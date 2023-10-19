@@ -20,14 +20,16 @@ urlpatterns = [
     path('categories/<int:pk>/', views.CategoryDetailView.as_view(), name='category-detail'),
     path('categories/<int:pk>/products/', views.CategoryProductsView.as_view(), name='category-products'),
     # ----- Images -----
-    path('images/', views.ImageModelListView.as_view(), name='image-model-list'),
+    path('images/<int:pk>/', views.ImageModelListView.as_view(), name='image-detail'),
     # ----- Brands -----
     path('brands/', views.BrandListView.as_view(), name='brand-list'),
     path('brands/<int:pk>/', views.BrandDetailView.as_view(), name='brand-detail'),
     # ----- Report -----
     path('report/', views.ReportView.as_view(), name='report'),
     path('report/offers/', views.OfferReportView.as_view(), name='offer-report'),
-    
+    path('report/most-popular-products/', views.MostPopularProductsView.as_view(), name='most-popular-products'),
+    path('report/unoffered-products/', views.UnofferedProductView.as_view(), name='unoffered-products'),
+        
     path('propertykeys/', views.ProductPropertyKeyListView.as_view(), name='property-key-list'),
     path('currencies/', views.CurrencyListView.as_view(), name='currency-list'),
     path('propertyvalues/', views.ModelPropertyValueListView.as_view(), name='property-value-list'),

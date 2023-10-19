@@ -11,7 +11,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class ImageModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImageModel
-        fields = '__all__'
+        fields = ['id', 'data', 'name', 'type']
         
         
 class BrandSerializer(serializers.ModelSerializer):

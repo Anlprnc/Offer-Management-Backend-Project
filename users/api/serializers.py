@@ -7,6 +7,7 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.response import Response
 from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.hashers import make_password
 
 
 class CustomLoginSerializer(serializers.Serializer):
@@ -25,7 +26,7 @@ class CustomLoginSerializer(serializers.Serializer):
             return attrs
         else:
             raise serializers.ValidationError('Both email and password are required')
-        
+      
         
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -36,19 +37,24 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "firstName", "lastName", "phone", "password", "confirmPassword", "birthDate", "email")
+        fields = ("id", "username", "first_name", "last_name", "password", "confirmPassword", "email")
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['confirmPassword']:
+        if attrs.get("password") != attrs.get('confirmPassword'):
             raise serializers.ValidationError({'password': 'Password fields did not match'})
         return attrs
-    
-    def create(self, validated_data):
 
-        user = User.objects.create_user(**validated_data)
-        user.set_password(validated_data["password"])
-        user.save()
-        return user
+    def create(self, validated_data):
+        if validated_data.get('password') != validated_data.get('confirmPassword'):
+            raise serializers.ValidationError("Those password don't match") 
+
+        elif validated_data.get('password') == validated_data.get('confirmPassword'):
+            validated_data['password'] = make_password(
+                validated_data.get('password')
+            )
+
+        validated_data.pop('confirmPassword') # add this
+        return super(RegisterSerializer, self).create(validated_data)
         
 
 class PasswordResetSerializer(serializers.Serializer):
@@ -118,3 +124,9 @@ class OfferSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offer
         fields = ['id', 'code', 'status', 'sub_total', 'discount', 'user_id', 'currency_id', 'delivery_at', 'create_at', 'update_at', 'items']
+        
+        
+class FavoritesSerliazer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorites
+        fields = ['id', 'product_id']

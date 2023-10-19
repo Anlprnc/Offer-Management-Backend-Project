@@ -1,7 +1,7 @@
-from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView, RetrieveUpdateDestroyAPIView, DestroyAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from users.models import ShoppingCart, ShoppingCartItem, Offer, OfferItem
-from .serializers import ShoppingCartItemSerializer, OfferSerializer, OfferItemSerializer, CustomLoginSerializer, RegisterSerializer, UserSerializer, PasswordResetSerializer, UsersCartItemSerializer
+from users.models import ShoppingCart, ShoppingCartItem, Offer, OfferItem, UserProfile, Role, UserRole, Favorites, Log
+from .serializers import ShoppingCartItemSerializer, OfferSerializer, OfferItemSerializer, CustomLoginSerializer, RegisterSerializer, UserSerializer, PasswordResetSerializer, UsersCartItemSerializer, FavoritesSerliazer
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
@@ -231,7 +231,7 @@ class LoginView(TokenObtainPairView):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user=serializer.validated_data['user']
+        user= serializer.validated_data['user']
         access_token = str(AccessToken.for_user(user))
 
         return Response({"token": access_token})
@@ -291,3 +291,33 @@ class UsersCartItemView(ListAPIView):
         userId = self.kwargs['pk']
         cartitems = ShoppingCartItem.objects.filter(cart__owner=userId).order_by('product__name')
         return cartitems
+    
+# ---------- Favorites Views ----------
+# Favorites List View
+class FavoritesView(RetrieveAPIView, CreateAPIView, DestroyAPIView):
+    serializer_class = FavoritesSerliazer
+    
+    def get_queryset(self):
+        user_id = self.request.user.id
+        return Favorites.objects.filter(user_id=user_id)
+    
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+    
+    def post(self, request, *args, **kwargs):
+        model_id = request.data.get('id')
+        user_id = request.user.id
+        
+        try:
+            favorite = Favorites.objects.get(product_id=model_id, user_id=user_id)
+            favorite.delete()
+            return Response({}, status=status.HTTTP_200_OK)
+        except Favorites.DoesNotExist:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)

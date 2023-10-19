@@ -1,5 +1,5 @@
 from datetime import timezone
-from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, RetrieveAPIView, DestroyAPIView
 from commerce.models import Category, ImageModel, Brand, Product, ProductPropertyKey, Currency, Model, ModelPropertyValue
 from .serializers import CategorySerializer, ImageModelSerializer, BrandSerializer, ProductSerializer, ProductPropertyKeySerializer, CurrencySerializer, ModelSerializer, ModelPropertyValueSerializer, ReportSerializer, OfferReportSerializer
 from rest_framework import status
@@ -7,9 +7,9 @@ from rest_framework.response import Response
 from users.models import OfferItem
 from rest_framework.permissions import IsAdminUser, AllowAny
 from .paginations import LargeResultsSetPagination, StandardResultsSetPagination
-from commerce.models import Offer
+from users.models import Offer
 from datetime import datetime, timedelta
-from django.db.models import Sum
+from django.db.models import Sum, Count
 
 # ---------- Category ----------
 # Category Create View
@@ -64,14 +64,25 @@ class CategoryProductsView(ListAPIView):
 
 # ---------- Image ----------  
 # Image Model View    
-class ImageModelListView(ListAPIView):
-    queryset = ImageModel.objects.all()
+class ImageModelListView(RetrieveAPIView, CreateAPIView, DestroyAPIView):
     serializer_class = ImageModelSerializer
     
-# Image Model Detail View    
-class ImageModelDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = ImageModel.objects.all()
-    serializer_class = ImageModelSerializer
+    def get_queryset(self):
+        image_id = self.kwargs.get('id')
+        return ImageModel.objects.filter(id=image_id)
+    
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
 
 # ---------- Brand ----------
 # Brand View
@@ -365,3 +376,20 @@ class OfferReportView(ListAPIView):
             return queryset
         
         return Response({'error': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
+    
+# Most Popular Products Report View
+class MostPopularProductsView(ListAPIView):
+    serializer_class = ProductSerializer
+    
+    def get_queryset(self):
+        amount = self.request.query_params.get('amount')
+        if amount is not None and amount.isnumeric():
+            return Product.objects.annotate(num_offers=Count('offer')).order_by('-num_offers')[:int(amount)]
+        return Product.objects.none()
+    
+# Unoffered Product View
+class UnofferedProductView(ListAPIView):
+    serializer_class = ProductSerializer
+    
+    def get_queryset(self):
+        return Product.objects.filter(offer__isnull=True)

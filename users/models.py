@@ -106,7 +106,7 @@ class Offer(models.Model):
     ]
     code = models.CharField(max_length=8, unique=True)
     status = models.IntegerField(choices=STATUS_CHOICES, default=0)
-    sub_total = models.DecimalField(max_digits=10, decimal_places=2)
+    sub_total = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
     discount = models.DecimalField(max_digits=5, decimal_places=2)
     user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     currency_id = models.ForeignKey(Currency, on_delete=models.CASCADE)
@@ -114,9 +114,9 @@ class Offer(models.Model):
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
-    @property
-    def grand_total(self):
-        return self.sub_total * (1 + (self.discount / 100))
+    def save(self, *args, **kwargs):
+        self.sub_total = self.sub_total * (1 + (self.discount / 100))
+        super().save(*args, **kwargs)
     
     class Meta:
         verbose_name = "Offer"
@@ -124,7 +124,7 @@ class Offer(models.Model):
         
     def __str__(self):
         return self.code
-
+    
 
 class OfferItem(models.Model):
     sku = models.CharField(max_length=100)

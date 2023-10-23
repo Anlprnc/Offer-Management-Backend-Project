@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from users.models import UserProfile, Role, UserRole, ShoppingCart, ShoppingCartItem, Offer, OfferItem, Favorites, Log
+from users.models import UserProfile, Role, UserRole, ShoppingCart, ShoppingCartItem, Offer, OfferItem, Favorites, Log, Currency
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
@@ -10,51 +10,70 @@ from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.hashers import make_password
 
 
-class CustomLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password= serializers.CharField()
+class UserProfileLoginSerializer(serializers.Serializer):
     
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(required=True)
+
+    class Meta:
+        model = User
+        fields = ("username", "password")
+
     def validate(self, attrs):
-        email=attrs.get('email')
-        password=attrs.get('password')
-        
-        if email and password:
-            user = authenticate(request=self.context.get('request'),email=email,password=password)
-            if not user:
-                raise serializers.ValidationError('Invalid email or password')
-            attrs['user']=user
+        username = attrs.get('username')
+        password = attrs.get('password')
+
+        if (username is not None or password is not None):
             return attrs
         else:
             raise serializers.ValidationError('Both email and password are required')
       
         
-class RegisterSerializer(serializers.ModelSerializer):
+class UserRegisterSerializer(serializers.ModelSerializer):
+    
     email = serializers.EmailField(
         required=True, validators=[UniqueValidator(queryset=User.objects.all())]
     )
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    username = serializers.CharField(
+        required=True, validators=[UniqueValidator(queryset=User.objects.all())]
+    )
+    password = serializers.CharField(
+        write_only=True, required=True, validators=[validate_password])
     confirmPassword = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
-        fields = ("id", "username", "first_name", "last_name", "password", "confirmPassword", "email")
+        fields = ("id", "username", "first_name", "last_name",
+                  "password", "confirmPassword", "email")
 
     def validate(self, attrs):
         if attrs.get("password") != attrs.get('confirmPassword'):
-            raise serializers.ValidationError({'password': 'Password fields did not match'})
+            raise serializers.ValidationError(
+                {'password': 'Password fields did not match'})
         return attrs
 
     def create(self, validated_data):
+        user = User.objects.create(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
+
+    def create(self, validated_data):
         if validated_data.get('password') != validated_data.get('confirmPassword'):
-            raise serializers.ValidationError("Those password don't match") 
+            raise serializers.ValidationError("Those password don't match")
 
         elif validated_data.get('password') == validated_data.get('confirmPassword'):
             validated_data['password'] = make_password(
                 validated_data.get('password')
             )
 
-        validated_data.pop('confirmPassword') # add this
-        return super(RegisterSerializer, self).create(validated_data)
+        validated_data.pop('confirmPassword')
+        return super(UserRegisterSerializer, self).create(validated_data)
         
 
 class PasswordResetSerializer(serializers.Serializer):
@@ -110,6 +129,12 @@ class ShoppingCartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShoppingCartItem
         fields = ['id', 'product_id', 'model_id', 'amount', 'product_title', 'model_title']
+        
+        
+class CurrencySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Currency
+        fields = '__all__'
                 
         
 class OfferItemSerializer(serializers.ModelSerializer):

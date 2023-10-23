@@ -1,7 +1,7 @@
 from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView, RetrieveUpdateDestroyAPIView, DestroyAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from users.models import ShoppingCart, ShoppingCartItem, Offer, OfferItem, UserProfile, Role, UserRole, Favorites, Log
-from .serializers import ShoppingCartItemSerializer, OfferSerializer, OfferItemSerializer, CustomLoginSerializer, RegisterSerializer, UserSerializer, PasswordResetSerializer, UsersCartItemSerializer, FavoritesSerliazer
+from users.models import ShoppingCart, ShoppingCartItem, Offer, OfferItem, UserProfile, Role, UserRole, Favorites, Log, Currency
+from .serializers import UserProfileLoginSerializer, UserRegisterSerializer, ShoppingCartItemSerializer, OfferSerializer, OfferItemSerializer, UserSerializer, PasswordResetSerializer, UsersCartItemSerializer, FavoritesSerliazer
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
@@ -14,6 +14,9 @@ from rest_framework import filters
 import math
 from core.page_filter import pages_filter
 from django.contrib.auth.views import PasswordResetView
+from django.contrib.auth import authenticate
+from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
 
 # ---------- Shopping Cart Views ----------    
 # Shopping Cart Item List View
@@ -199,6 +202,11 @@ class AuthUserOfferDetailView(RetrieveAPIView):
 class AuthUserOffersCreateView(CreateAPIView):
     serializer_class = OfferSerializer
     
+    # def get_queryset(self):
+    #     user_id = self.request.user.id
+    #     currency_id = self.request.data.get('currency_id')
+    #     return Offer.objects.filter(user_id=user_id, currency_id=currency_id)
+    
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
         return response
@@ -224,27 +232,50 @@ class AdminOfferUpdateView(UpdateAPIView):
         
 # ---------- Users Views ----------
 # Login View
-class LoginView(TokenObtainPairView):
-    serializer_class = CustomLoginSerializer
-
-    def post(self, request, *args, **kwargs):
-
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user= serializer.validated_data['user']
-        access_token = str(AccessToken.for_user(user))
-
-        return Response({"token": access_token})
+class UserLoginView(ListAPIView):
+    serializer_class = UserProfileLoginSerializer
+    queryset = User.objects.all()
+    def post(self, request):
+        serializer = UserProfileLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            password = serializer.validated_data['password']
+            user = authenticate(request, username=username, password=password)
+            if user:
+                refresh = RefreshToken.for_user(user)
+                access_token = str(refresh.access_token)
+                return Response({'access_token': access_token}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Kullanıcı adı veya şifre yanlış.'}, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 # Register View
-class RegisterView(CreateAPIView):
+class UserRegisterView(CreateAPIView):
     queryset = User.objects.all()
-    permission_classes = [AllowAny]
-    serializer_class = RegisterSerializer
+    serializer_class = UserRegisterSerializer
 
-    def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        return Response({'message': 'Registration successfully done', 'success': True})
+    def perform_create(self, serializer):
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        data = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
+        return Response(data, status=status.HTTP_201_CREATED)
+    
+    def validate(self, attrs):
+        if attrs.get("password") != attrs.get('confirmPassword'):
+            raise serializers.ValidationError(
+                {'password': 'Password fields did not match'})
+        if attrs.get("email") is None:
+            raise serializers.ValidationError(
+                {'email': 'Email field cannot be empty'})
+        if attrs.get("username") is None:
+            raise serializers.ValidationError(
+                {'username': 'Username field cannot be empty'})
+        
+        return attrs
     
 # Forgot Password View
 class PasswordResetAPIView(CreateAPIView):
@@ -263,7 +294,6 @@ class UserListAPIView(RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["firstName", "email"]
-
 
     def get_queryset(self):
         queryset = User.objects.all()

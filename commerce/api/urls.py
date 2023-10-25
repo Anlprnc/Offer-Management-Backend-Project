@@ -18,7 +18,7 @@ urlpatterns = [
     path('categories/', views.CategoryListView.as_view(), name='category-list'),
     path('categories/create/', views.CategoryCreateView.as_view(), name='category-create'),
     path('categories/<int:pk>/', views.CategoryDetailView.as_view(), name='category-detail'),
-    path('categories/<int:pk>/products/', views.CategoryProductsView.as_view(), name='category-products'),
+    path('categories/<int:id>/products/', views.CategoryProductsView.as_view(), name='category-products'),
     # ----- Images -----
     path('images/<int:pk>/', views.ImageModelListView.as_view(), name='image-detail'),
     # ----- Brands -----

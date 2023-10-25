@@ -165,7 +165,7 @@ class ModelListView(ListAPIView):
     serializer_class = ModelSerializer
     
     def get_queryset(self):
-        product_id = self.kwargs.get['pk']
+        product_id = self.kwargs.get('pk')
         return Model.objects.filter(product_id=product_id, is_active=1)
     
 # Model Detail View
@@ -281,8 +281,8 @@ class ProductPropertiesListView(ListAPIView):
     
     def get_queryset(self):
         product_id = self.kwargs['pk']
-        return ModelPropertyValue.objects.filter(model_id__product_id=product_id) 
-    
+        return ModelPropertyValue.objects.filter(model_id__product_id=product_id)
+
 # Product Properties Detail View
 class ProductPropertiesDetailView(RetrieveUpdateDestroyAPIView):
     queryset = ProductPropertyKey.objects.all()

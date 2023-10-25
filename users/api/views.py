@@ -21,6 +21,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 # ---------- Shopping Cart Views ----------    
 # Shopping Cart Item List View
 class ShoppingCartItemListView(ListAPIView):
+    serializer_class = ShoppingCartItemSerializer
+    
     def get(self, request, *args, **kwargs):
         user = request.user
         cart_items = ShoppingCartItem.objects.filter(cart_id__user_id=user)
@@ -93,7 +95,7 @@ class OfferAdminDetailView(RetrieveAPIView):
     serializer_class = OfferItemSerializer
     
     def retrieve(self, request, *args, **kwargs):
-        offer_id = self.kwargs.get('id')
+        offer_id = self.kwargs.get['id']
         
         try:
             offer = Offer.objects.get(id=offer_id)

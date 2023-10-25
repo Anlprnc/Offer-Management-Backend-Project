@@ -96,7 +96,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ("id", "firstName", "lastName", "phone", "password", "confirmPassword", "birthDate", "email")
+        fields = ("id", "first_name", "last_name", "password", "roles")
     
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -125,10 +125,11 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
 class ShoppingCartItemSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product_id.title', read_only=True)
     model_title = serializers.CharField(source='model_id.title', read_only=True)
+    user_firstName = serializers.CharField(source='user.userprofile.firstName', read_only=True)
     
     class Meta:
         model = ShoppingCartItem
-        fields = ['id', 'product_id', 'model_id', 'amount', 'product_title', 'model_title']
+        fields = ['id', 'product_id', 'model_id', 'amount', 'product_title', 'model_title', 'user_firstName']
         
         
 class CurrencySerializer(serializers.ModelSerializer):

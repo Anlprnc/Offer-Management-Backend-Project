@@ -9,7 +9,7 @@ urlpatterns = [
     path('cart/auth/create', ShoppingCartCreateView.as_view(), name='cart-create'),
     # Offers
     path('offers/admin/', AdminOffersView.as_view(), name='admin-offers'),
-    path('offers/<int:pk>/', OfferAdminDetailView.as_view(), name='offer-detail>'),
+    path('offers/<int:id>/', OfferAdminDetailView.as_view(), name='offer-detail>'),
     path('offers/admin/user/<int:id>/', UserOffersView.as_view(), name='user-offers'),
     path('offers/auth/', AuthUserOffersView.as_view(), name='auth-user-offers'),
     path('offers/<int:id>/auth/', AuthUserOfferDetailView.as_view(), name='auth-user-offer-details'),
